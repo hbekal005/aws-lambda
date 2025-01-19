@@ -1,9 +1,9 @@
 pipeline {
     agent any
     environment {
-        AWS_REGION = 'us-east-1'
-        LAMBDA_BUCKET = 'hbekal005-lambda-bucket'  // The S3 bucket to store the Lambda code
-        LAMBDA_CODE_ZIP = 'lambda_code.zip'  // The Lambda zip file
+        AWS_REGION = 'us-east-1'  // AWS Region where your resources are located
+        LAMBDA_BUCKET = 'hbekal005-lambda-bucket'  // S3 bucket for Lambda code
+        LAMBDA_CODE_ZIP = 'lambda_code.zip'  // The Lambda code zip file name
         CFN_STACK_NAME = 'MyLambdaStack'
         CFN_TEMPLATE = 'lambda_deployment.yaml'
     }
@@ -25,13 +25,11 @@ pipeline {
         stage('Upload Lambda Code to S3') {
             steps {
                 script {
-                    // Use the withCredentials block to securely use AWS credentials
-                    withCredentials([usernamePassword(credentialsId: 'AWS-User-Acccess', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    // Use the withAWS block to securely use AWS credentials
+                    withAWS(credentials: 'AWS-User-Acccess', region: AWS_REGION) {
                         // Upload the zip file to S3 using AWS CLI with the credentials
                         sh """
-                        aws s3 cp ${LAMBDA_CODE_ZIP} s3://${LAMBDA_BUCKET}/lambda_code.zip --region ${AWS_REGION} \
-                        --aws-access-key-id ${AWS_ACCESS_KEY_ID} \
-                        --aws-secret-access-key ${AWS_SECRET_ACCESS_KEY}
+                        aws s3 cp ${LAMBDA_CODE_ZIP} s3://${LAMBDA_BUCKET}/lambda_code.zip --region ${AWS_REGION}
                         """
                     }
                 }
@@ -40,17 +38,15 @@ pipeline {
         stage('Deploy CloudFormation Stack') {
             steps {
                 script {
-                    // Use the withCredentials block to securely use AWS credentials
-                    withCredentials([usernamePassword(credentialsId: 'aws-credentials', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    // Use the withAWS block to securely use AWS credentials
+                    withAWS(credentials: 'AWS-User-Acccess', region: AWS_REGION) {
                         // Deploy the CloudFormation stack using AWS CLI with the credentials
                         sh """
                         aws cloudformation deploy \
                             --template-file ${CFN_TEMPLATE} \
                             --stack-name ${CFN_STACK_NAME} \
                             --capabilities CAPABILITY_IAM \
-                            --region ${AWS_REGION} \
-                            --aws-access-key-id ${AWS_ACCESS_KEY_ID} \
-                            --aws-secret-access-key ${AWS_SECRET_ACCESS_KEY}
+                            --region ${AWS_REGION}
                         """
                     }
                 }
