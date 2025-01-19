@@ -39,7 +39,7 @@ Resources:
   LambdaCodeS3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: my-lambda-code-bucket
+      BucketName: hbekal005-lambda-bucket
 
   CloudWatchEventRule:
     Type: AWS::Events::Rule
