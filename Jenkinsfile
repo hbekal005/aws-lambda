@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         AWS_REGION = 'us-east-1'
-        LAMBDA_BUCKET = 'my-lambda-code-bucket'  // Replace with your S3 bucket for Lambda code
+        LAMBDA_BUCKET = 'hbekal005-lambda-bucket'  // The S3 bucket to store the Lambda code
         LAMBDA_CODE_ZIP = 'lambda_code.zip'  // The Lambda zip file
         CFN_STACK_NAME = 'MyLambdaStack'
         CFN_TEMPLATE = 'lambda_deployment.yaml'
