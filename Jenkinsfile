@@ -43,6 +43,27 @@ pipeline {
                 }
             }
         }
+        stage('Check and Delete Existing CloudFormation Stack') {
+            steps {
+                script {
+                    // Use the withAWS block to securely use AWS credentials
+                    withAWS(credentials: 'AWS-User-Acccess', region: AWS_REGION) {
+                        // Check if the CloudFormation stack exists
+                        def stackExists = sh(script: "aws cloudformation describe-stacks --stack-name ${CFN_STACK_NAME} --region ${AWS_REGION}", returnStatus: true) == 0
+                        
+                        if (stackExists) {
+                            echo "Stack ${CFN_STACK_NAME} exists. Deleting the stack."
+                            sh "aws cloudformation delete-stack --stack-name ${CFN_STACK_NAME} --region ${AWS_REGION}"
+                            
+                            // Wait for the stack to be deleted
+                            sh "aws cloudformation wait stack-delete-complete --stack-name ${CFN_STACK_NAME} --region ${AWS_REGION}"
+                        } else {
+                            echo "Stack ${CFN_STACK_NAME} does not exist. Proceeding with deployment."
+                        }
+                    }
+                }
+            }
+        }
         stage('Deploy CloudFormation Stack') {
             steps {
                 script {

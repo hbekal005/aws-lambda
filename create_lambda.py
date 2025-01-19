@@ -58,7 +58,7 @@ def create_ec2_instance_and_s3_bucket(instance_name, index):
         print(f"Created EC2 instance: {instance_name} with ID: {instance_id}")
 
         # Create a file with the EC2 instance ID in the /tmp directory
-        file_name = f"/tmp/instance_id_{index}.txt"
+        file_name = os.path.join("/tmp", f"instance_id_{index}.txt")
         with open(file_name, 'w') as file:
             file.write(instance_id)  # Writing the EC2 instance ID to the file
         
