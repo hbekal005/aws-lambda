@@ -53,6 +53,7 @@ pipeline {
                         aws cloudformation deploy \
                             --template-file ${CFN_TEMPLATE} \
                             --stack-name ${CFN_STACK_NAME} \
+                            --parameter-overrides LambdaCodeS3Bucket=${LAMBDA_BUCKET} \
                             --capabilities CAPABILITY_IAM \
                             --region ${AWS_REGION}
                         """
