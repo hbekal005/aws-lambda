@@ -5,10 +5,10 @@ from botocore.exceptions import ClientError
 from datetime import datetime
 
 # Assuming VPC is already created. Using default VPC
-VPCID = 'vpc-07f3a085add361764'
+VPCID = 'vpc-0aaa2e11615b15db2'
 
 # Assuming Subnet is already created
-SUBNET_ID = 'subnet-09ac8748c88297ef7'
+SUBNET_ID = 'subnet-0f13ec32e6b368c21'
 
 # Instance type
 INSTANCE_TYPE = 't3.micro'
