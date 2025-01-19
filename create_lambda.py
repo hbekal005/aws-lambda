@@ -1,8 +1,8 @@
 import boto3
 import json
 import os
-from boto3.exceptions import ClientError
-
+from botocore.exceptions import ClientError
+from datetime import datetime
 
 # Assuming VPC is already created. Using default VPC
 VPCID = 'vpc-07f3a085add361764'
@@ -19,8 +19,8 @@ REGION = 'us-east-1'
 # User Name
 USER_NAME = 'hbekal005'
 
-# AWS AMI ID
-AMI_ID = 'ami-0c55b159cbfafe1f0'
+# Amazon Linux 2 AMI (HVM), SSD Volume Type
+AMI_ID = 'ami-043a5a82b6cf98947'
 
 # EC2 client
 ec2_client = boto3.client('ec2', region_name=REGION)
@@ -28,9 +28,10 @@ ec2_client = boto3.client('ec2', region_name=REGION)
 # S3 client
 s3_client = boto3.client('s3', region_name=REGION)
 
-# Function to create EC2 instance and return instance ID
-def create_ec2_instance(instance_name):
+# Function to create EC2 instance and s3 bucket and upload instance ID to the bucket
+def create_ec2_instance_and_s3_bucket(instance_name, index):
     try:
+        # Create EC2 instance
         response = ec2_client.run_instances(
             ImageId=AMI_ID,
             InstanceType=INSTANCE_TYPE,
@@ -51,18 +52,51 @@ def create_ec2_instance(instance_name):
         )
         instance_id = response['Instances'][0]['InstanceId']
         print(f"Created EC2 instance: {instance_name} with ID: {instance_id}")
-        return instance_id
+        
+        # Create S3 bucket with a unique name
+        timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+        bucket_name = f"{USER_NAME}-mys3bucket{index}-{timestamp}"
+        s3_client.create_bucket(
+            Bucket=bucket_name,
+            CreateBucketConfiguration={
+                'LocationConstraint': REGION
+            }
+        )
+        print(f"Created S3 bucket: {bucket_name}")
+        
+        # Create a file with the EC2 instance ID
+        file_name = f"instance_id_{index}.txt"
+        with open(file_name, 'w') as file:
+            file.write(instance_id)  # Writing the EC2 instance ID to the file
+        
+        # Upload the file to the S3 bucket (each bucket gets its own instance ID)
+        s3_client.upload_file(file_name, bucket_name, file_name)
+        print(f"Uploaded instance ID file to {bucket_name}")
+        
+        # Clean up the local file after upload
+        os.remove(file_name)
+        
+        return instance_id, bucket_name
     
     except ClientError as e:
-        print(f"Error creating EC2 instance {instance_name}: {e}")
-        return None
-
-
+        print(f"Error creating EC2 instance or S3 bucket {instance_name}: {e}")
+        return None, None
 
 def lambda_handler(event, context):
-    print("Starting EC2 instance creation and S3 bucket setup...")
-    create_ec2_instance(event, context)
+    """AWS Lambda entry point"""
+    print("Starting EC2 instance and S3 bucket creation...")
+
+    instance_ids_and_buckets = []
+    
+    # Loop to create 10 EC2 instances and corresponding S3 buckets
+    for i in range(1, 11):
+        instance_name = f"myinstance{i}"
+        instance_id, bucket_name = create_ec2_instance_and_s3_bucket(instance_name, i)
+        
+        if instance_id and bucket_name:
+            instance_ids_and_buckets.append((instance_id, bucket_name))
+    
     return {
         'statusCode': 200,
-        'body': json.dumps('Hello from Lambda!')
+        'body': json.dumps(f"Successfully created 10 EC2 instances and 10 S3 buckets. Instance IDs uploaded.")
     }
