@@ -10,14 +10,14 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the code from the 'main' branch of your Git repository
+                // Checkout the code from the 'bugfix/post-submission' branch of your Git repository
                 git branch: 'bugfix/post-submission', url: 'https://github.com/hbekal005/aws-lambda.git'
             }
         }
         stage('Package Lambda Code') {
             steps {
                 script {
-                    // Zip the Lambda code into the specified file
+                    // Zip the Lambda code into the specified file, excluding Jenkinsfile and README.md
                     sh 'zip -r ${LAMBDA_CODE_ZIP} * -x Jenkinsfile README.md'
                 }
             }
@@ -27,10 +27,18 @@ pipeline {
                 script {
                     // Use the withAWS block to securely use AWS credentials
                     withAWS(credentials: 'AWS-User-Acccess', region: AWS_REGION) {
+                        // Check if the S3 bucket exists
+                        def bucketExists = sh(script: "aws s3 ls s3://${LAMBDA_BUCKET} --region ${AWS_REGION}", returnStatus: true) == 0
+                        
+                        if (bucketExists) {
+                            echo "Bucket ${LAMBDA_BUCKET} exists. Uploading the file."
+                        } else {
+                            echo "Bucket ${LAMBDA_BUCKET} does not exist. Creating the bucket."
+                            sh "aws s3 mb s3://${LAMBDA_BUCKET} --region ${AWS_REGION}"
+                        }
+                        
                         // Upload the zip file to S3 using AWS CLI with the credentials
-                        sh """
-                        aws s3 cp ${LAMBDA_CODE_ZIP} s3://${LAMBDA_BUCKET}/lambda_code.zip --region ${AWS_REGION}
-                        """
+                        sh "aws s3 cp ${LAMBDA_CODE_ZIP} s3://${LAMBDA_BUCKET}/lambda_code.zip --region ${AWS_REGION}"
                     }
                 }
             }
