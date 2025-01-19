@@ -8,7 +8,7 @@ from datetime import datetime
 VPCID = 'vpc-07f3a085add361764'
 
 # Assuming Subnet is already created
-SUBNET_ID = 'subnet-0c55b159cbfafe1f0'
+SUBNET_ID = 'subnet-09ac8748c88297ef7'
 
 # Instance type
 INSTANCE_TYPE = 't3.micro'
