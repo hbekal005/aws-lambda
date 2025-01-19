@@ -39,7 +39,7 @@ Resources:
   LambdaCodeS3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: hbekal005-lambda-bucket
+      BucketName: !Sub "${AWS::StackName}-lambda-bucket-${AWS::Timestamp}"
 
   CloudWatchEventRule:
     Type: AWS::Events::Rule

@@ -22,6 +22,9 @@ USER_NAME = 'hbekal005'
 # Amazon Linux 2 AMI (HVM), SSD Volume Type
 AMI_ID = 'ami-043a5a82b6cf98947'
 
+# Security Group ID
+SECURITY_GROUP_ID = 'sg-09027de0c67feb1d8'
+
 # EC2 client
 ec2_client = boto3.client('ec2', region_name=REGION)
 
@@ -38,6 +41,7 @@ def create_ec2_instance_and_s3_bucket(instance_name, index):
             MinCount=1,
             MaxCount=1,
             SubnetId=SUBNET_ID,
+            SecurityGroupIds=[SECURITY_GROUP_ID],
             TagSpecifications=[
                 {
                     'ResourceType': 'instance',
@@ -52,6 +56,11 @@ def create_ec2_instance_and_s3_bucket(instance_name, index):
         )
         instance_id = response['Instances'][0]['InstanceId']
         print(f"Created EC2 instance: {instance_name} with ID: {instance_id}")
+
+        # Create a file with the EC2 instance ID
+        file_name = f"instance_id_{index}.txt"
+        with open(file_name, 'w') as file:
+            file.write(instance_id)  # Writing the EC2 instance ID to the file
         
         # Create S3 bucket with a unique name
         timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
@@ -63,11 +72,6 @@ def create_ec2_instance_and_s3_bucket(instance_name, index):
             }
         )
         print(f"Created S3 bucket: {bucket_name}")
-        
-        # Create a file with the EC2 instance ID
-        file_name = f"instance_id_{index}.txt"
-        with open(file_name, 'w') as file:
-            file.write(instance_id)  # Writing the EC2 instance ID to the file
         
         # Upload the file to the S3 bucket (each bucket gets its own instance ID)
         s3_client.upload_file(file_name, bucket_name, file_name)

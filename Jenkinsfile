@@ -11,14 +11,14 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Checkout the code from the 'main' branch of your Git repository
-                git branch: 'main', url: 'https://github.com/hbekal005/aws-lambda.git'
+                git branch: 'bugfix/post-submission', url: 'https://github.com/hbekal005/aws-lambda.git'
             }
         }
         stage('Package Lambda Code') {
             steps {
                 script {
                     // Zip the Lambda code into the specified file
-                    sh 'zip -r ${LAMBDA_CODE_ZIP} *'
+                    sh 'zip -r ${LAMBDA_CODE_ZIP} * -x Jenkinsfile README.md'
                 }
             }
         }
