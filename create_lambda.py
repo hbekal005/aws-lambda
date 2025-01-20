@@ -40,8 +40,14 @@ def create_ec2_instance_and_s3_bucket(instance_name, index):
             InstanceType=INSTANCE_TYPE,
             MinCount=1,
             MaxCount=1,
-            SubnetId=SUBNET_ID,
-            SecurityGroupIds=[SECURITY_GROUP_ID],
+            NetworkInterfaces=[
+                {
+                    'SubnetId': SUBNET_ID,
+                    'DeviceIndex': 0,
+                    'AssociatePublicIpAddress': False,
+                    'Groups': [SECURITY_GROUP_ID]
+                }
+            ],
             TagSpecifications=[
                 {
                     'ResourceType': 'instance',
