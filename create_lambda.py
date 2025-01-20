@@ -2,7 +2,6 @@ import boto3
 import json
 import os
 from botocore.exceptions import ClientError
-from datetime import datetime, timezone
 import time
 
 # Assuming VPC is already created. Using default VPC
@@ -122,7 +121,7 @@ def lambda_handler(event, context):
             else:
                 retries -= 1
                 print(f"Retrying to create instance {instance_name}. Retries left: {retries}")
-                time.sleep(5)  # Wait for 5 seconds before retrying
+                time.sleep(60)  # Wait for 5 seconds before retrying
     
     return {
         'statusCode': 200,
