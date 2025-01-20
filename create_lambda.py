@@ -79,12 +79,7 @@ def create_ec2_instance_and_s3_bucket(instance_name, index):
                 print(f"S3 bucket {bucket_name} already exists.")
             except ClientError:
                 # If the bucket does not exist, create it
-                s3_client.create_bucket(
-                    Bucket=bucket_name,
-                    CreateBucketConfiguration={
-                        'LocationConstraint': REGION if REGION != 'us-east-1' else None
-                    }
-                )
+                s3_client.create_bucket(Bucket=bucket_name)
                 print(f"Created S3 bucket: {bucket_name}")
             
             # Upload the file to the S3 bucket (each bucket gets its own instance ID)
@@ -121,7 +116,7 @@ def lambda_handler(event, context):
             else:
                 retries -= 1
                 print(f"Retrying to create instance {instance_name}. Retries left: {retries}")
-                time.sleep(60)  # Wait for 5 seconds before retrying
+                time.sleep(5)  # Wait for 5 seconds before retrying
     
     return {
         'statusCode': 200,
