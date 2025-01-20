@@ -10,8 +10,8 @@ VPCID = 'vpc-0aaa2e11615b15db2'
 # Assuming Subnet is already created
 SUBNET_ID = 'subnet-0f13ec32e6b368c21'
 
-# Instance type
-INSTANCE_TYPE = 't3.micro'
+# Instance type (Updating to t2.micro for free tier)
+INSTANCE_TYPE = 't2.micro'
 
 # AWS Region
 REGION = 'us-east-1'
