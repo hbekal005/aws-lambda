@@ -64,7 +64,14 @@ pipeline {
                         """
                         
                         // Wait for the change set to be created
-                        sh "aws cloudformation wait change-set-create-complete --stack-name ${CFN_STACK_NAME} --change-set-name ${CHANGE_SET_NAME} --region ${AWS_REGION}"
+                        try {
+                            sh "aws cloudformation wait change-set-create-complete --stack-name ${CFN_STACK_NAME} --change-set-name ${CHANGE_SET_NAME} --region ${AWS_REGION}"
+                        } catch (Exception e) {
+                            echo "Error creating change set: ${e.message}"
+                            // Describe the change set to get details of the failure
+                            sh "aws cloudformation describe-change-set --stack-name ${CFN_STACK_NAME} --change-set-name ${CHANGE_SET_NAME} --region ${AWS_REGION}"
+                            error "Change set creation failed."
+                        }
                     }
                 }
             }
