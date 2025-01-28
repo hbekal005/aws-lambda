@@ -6,6 +6,7 @@ pipeline {
         LAMBDA_CODE_ZIP = 'lambda_code.zip'  // The Lambda code zip file name
         CFN_STACK_NAME = 'MyLambdaStack'
         CFN_TEMPLATE = 'lambda_deployment.yaml'
+        CHANGE_SET_NAME = 'LambdaChangeSet'
     }
     stages {
         stage('Checkout') {
@@ -43,41 +44,51 @@ pipeline {
                 }
             }
         }
-        stage('Check and Delete Existing CloudFormation Stack') {
+        stage('Create Change Set') {
             steps {
                 script {
                     // Use the withAWS block to securely use AWS credentials
                     withAWS(credentials: 'AWS-User-Acccess', region: AWS_REGION) {
-                        // Check if the CloudFormation stack exists
-                        def stackExists = sh(script: "aws cloudformation describe-stacks --stack-name ${CFN_STACK_NAME} --region ${AWS_REGION}", returnStatus: true) == 0
+                        // Create a change set for the CloudFormation stack
+                        sh """
+                        aws cloudformation create-change-set \
+                            --stack-name ${CFN_STACK_NAME} \
+                            --template-body file://${CFN_TEMPLATE} \
+                            --change-set-name ${CHANGE_SET_NAME} \
+                            --capabilities CAPABILITY_IAM \
+                            --parameters ParameterKey=LambdaCodeS3Bucket,ParameterValue=${LAMBDA_BUCKET} \
+                            --region ${AWS_REGION}
+                        """
                         
-                        if (stackExists) {
-                            echo "Stack ${CFN_STACK_NAME} exists. Deleting the stack."
-                            sh "aws cloudformation delete-stack --stack-name ${CFN_STACK_NAME} --region ${AWS_REGION}"
-                            
-                            // Wait for the stack to be deleted
-                            sh "aws cloudformation wait stack-delete-complete --stack-name ${CFN_STACK_NAME} --region ${AWS_REGION}"
-                        } else {
-                            echo "Stack ${CFN_STACK_NAME} does not exist. Proceeding with deployment."
-                        }
+                        // Wait for the change set to be created
+                        sh "aws cloudformation wait change-set-create-complete --stack-name ${CFN_STACK_NAME} --change-set-name ${CHANGE_SET_NAME} --region ${AWS_REGION}"
                     }
                 }
             }
         }
-        stage('Deploy CloudFormation Stack') {
+        stage('Execute Change Set') {
             steps {
                 script {
                     // Use the withAWS block to securely use AWS credentials
                     withAWS(credentials: 'AWS-User-Acccess', region: AWS_REGION) {
-                        // Deploy the CloudFormation stack using AWS CLI with the credentials
-                        sh """
-                        aws cloudformation deploy \
-                            --template-file ${CFN_TEMPLATE} \
-                            --stack-name ${CFN_STACK_NAME} \
-                            --parameter-overrides LambdaCodeS3Bucket=${LAMBDA_BUCKET} \
-                            --capabilities CAPABILITY_IAM \
-                            --region ${AWS_REGION}
-                        """
+                        try {
+                            // Execute the change set to update the CloudFormation stack
+                            sh """
+                            aws cloudformation execute-change-set \
+                                --stack-name ${CFN_STACK_NAME} \
+                                --change-set-name ${CHANGE_SET_NAME} \
+                                --region ${AWS_REGION}
+                            """
+                        } catch (Exception e) {
+                            echo "Error executing change set: ${e.message}"
+                            // Rollback to the previous stack state
+                            sh """
+                            aws cloudformation continue-update-rollback \
+                                --stack-name ${CFN_STACK_NAME} \
+                                --region ${AWS_REGION}
+                            """
+                            error "Change set execution failed. Rolled back to the previous stack state."
+                        }
                     }
                 }
             }
