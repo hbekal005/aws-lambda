@@ -8,11 +8,14 @@ pipeline {
         CFN_TEMPLATE = 'lambda_deployment.yaml'
         CHANGE_SET_NAME = 'LambdaChangeSet'
     }
+    parameters {
+        choice(name: 'BRANCH_NAME', choices: ['main', 'bugfix/post-submission', 'feature/change-set'], description: 'Select the branch to build')
+    }
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the code from the 'bugfix/post-submission' branch of your Git repository
-                git branch: 'bugfix/post-submission', url: 'https://github.com/hbekal005/aws-lambda.git'
+                // Checkout the code from the selected branch of your Git repository
+                git branch: "${params.BRANCH_NAME}", url: 'https://github.com/hbekal005/aws-lambda.git'
             }
         }
         stage('Package Lambda Code') {
